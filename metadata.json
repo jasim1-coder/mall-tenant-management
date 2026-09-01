@@ -1,0 +1,6 @@
+{
+  "name": "Safari Mall Doha - Tenant Management System",
+  "description": "Professional C# WinForms-style enterprise tenant, lease, contract, rent billing, cheque management, and Excel master import system for Safari Mall Doha.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
