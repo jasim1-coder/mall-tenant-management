@@ -1,15 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import {
-  AlertTriangle,
   ChevronDown,
   ChevronRight,
   Search,
   Download,
-  Filter,
-  CreditCard,
-  Building,
-  DollarSign,
-  FileSpreadsheet
+  CreditCard
 } from 'lucide-react';
 import { OutstandingChargeDetail, Tenant } from '../types';
 import { formatCurrency } from '../services/dataStore';
@@ -46,7 +41,7 @@ export const OutstandingView: React.FC<OutstandingViewProps> = ({
   const [fromMonth, setFromMonth] = useState('May-2026');
   const [toMonth, setToMonth] = useState('Aug-2026');
   const [expandedTenantIds, setExpandedTenantIds] = useState<Set<string>>(
-    new Set(['t-1001', 't-1002']) // Pre-expand ABC Trading & Gulf Foods as in example!
+    () => new Set(tenants.length > 0 ? [tenants[0].id] : ['t-1001'])
   );
 
   // Group outstanding charges by tenant
@@ -102,9 +97,20 @@ export const OutstandingView: React.FC<OutstandingViewProps> = ({
     return summaries.sort((a, b) => b.totalOutstanding - a.totalOutstanding);
   }, [tenants, outstandingCharges, tenantFilter, shopFilter, chargeTypeFilter]);
 
-  const grandTotalOutstanding = useMemo(() => {
-    const total = groupedData.reduce((sum, g) => sum + g.totalOutstanding, 0);
-    return total > 0 ? total : 485750;
+  const summaryTotals = useMemo(() => {
+    const totals = {
+      total: 0,
+      rent: 0,
+      electricity: 0,
+      maintenance: 0,
+    };
+    groupedData.forEach((g) => {
+      totals.total += g.totalOutstanding;
+      totals.rent += g.rentOutstanding;
+      totals.electricity += g.electricityOutstanding;
+      totals.maintenance += g.maintenanceOutstanding;
+    });
+    return totals;
   }, [groupedData]);
 
   const toggleExpand = (tenantId: string) => {
@@ -231,43 +237,36 @@ export const OutstandingView: React.FC<OutstandingViewProps> = ({
         </div>
       </div>
 
-      {/* Grand Summary Strip */}
-      <div
-        className={`bg-white border-l-4 ${
-          grandTotalOutstanding > 20000 ? 'border-l-blue-600' : 'border-l-rose-600'
-        } border-y border-r border-[#CBD5E1] rounded-[2px] p-3 flex items-center justify-between shadow-xs`}
-      >
-        <div className="flex items-center gap-3">
-          <div
-            className={`w-8 h-8 rounded ${
-              grandTotalOutstanding > 20000
-                ? 'bg-blue-50 border-blue-200 text-blue-700'
-                : 'bg-rose-50 border-rose-200 text-rose-700'
-            } border flex items-center justify-center`}
-          >
-            <AlertTriangle className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-              Total Outstanding Balance
-            </div>
-            <div
-              className={`text-[20px] font-bold font-mono ${
-                grandTotalOutstanding > 20000 ? 'text-blue-700' : 'text-rose-700'
-              }`}
-            >
-              {formatCurrency(grandTotalOutstanding)}
-            </div>
+      {/* Financial Summary Bar */}
+      <div className="bg-white border border-[#CBD5E1] rounded-[2px] p-2.5 grid grid-cols-2 sm:grid-cols-4 gap-3 shadow-xs">
+        <div className="border-r border-[#E2E8F0] pr-2">
+          <div className="text-[10.5px] font-semibold text-slate-500 uppercase tracking-wide">Total Outstanding</div>
+          <div className="text-[15px] font-bold font-mono text-slate-900 mt-0.5">
+            {formatCurrency(summaryTotals.total)}
           </div>
         </div>
-
-        <div className="text-[11px] text-slate-500 text-right">
-          <span>Click any tenant row to expand/collapse detailed monthly breakdown.</span>
+        <div className="border-r border-[#E2E8F0] pr-2">
+          <div className="text-[10.5px] font-semibold text-slate-500 uppercase tracking-wide">Rent Outstanding</div>
+          <div className="text-[15px] font-bold font-mono text-slate-800 mt-0.5">
+            {formatCurrency(summaryTotals.rent)}
+          </div>
+        </div>
+        <div className="border-r border-[#E2E8F0] pr-2">
+          <div className="text-[10.5px] font-semibold text-slate-500 uppercase tracking-wide">Electricity Pending</div>
+          <div className="text-[15px] font-bold font-mono text-slate-800 mt-0.5">
+            {formatCurrency(summaryTotals.electricity)}
+          </div>
+        </div>
+        <div className="pr-2">
+          <div className="text-[10.5px] font-semibold text-slate-500 uppercase tracking-wide">Maintenance Pending</div>
+          <div className="text-[15px] font-bold font-mono text-slate-800 mt-0.5">
+            {formatCurrency(summaryTotals.maintenance)}
+          </div>
         </div>
       </div>
 
       {/* Master-Detail Expandable Table */}
-      <div className="flex-1 border border-[#CBD5E1] rounded-[2px] bg-white overflow-y-auto shadow-sm">
+      <div className="flex-1 min-h-0 border border-[#CBD5E1] rounded-[2px] bg-white overflow-y-auto shadow-xs">
         <table className="w-full text-left text-[11.5px] border-collapse">
           <thead className="sticky top-0 bg-[#E2E8F0] border-b border-[#94A3B8] text-[#1E293B] shadow-xs z-10">
             <tr>
@@ -317,13 +316,12 @@ export const OutstandingView: React.FC<OutstandingViewProps> = ({
                       {tenantGroup.maintenanceOutstanding.toLocaleString()}
                     </td>
                     <td
-                      className={`py-2 px-3 border-r border-[#E2E8F0] text-right font-mono font-bold ${
-                        isOver20k
-                          ? 'text-blue-700 bg-blue-50/70'
-                          : tenantGroup.totalOutstanding > 0
+                      className={`py-2 px-3 border-r border-[#E2E8F0] text-right font-mono font-bold ${isOver20k
+                        ? 'text-blue-700 bg-blue-50/70'
+                        : tenantGroup.totalOutstanding > 0
                           ? 'text-rose-700 bg-rose-50/50'
                           : 'text-slate-500'
-                      }`}
+                        }`}
                     >
                       {tenantGroup.totalOutstanding.toLocaleString()}
                     </td>
@@ -377,13 +375,12 @@ export const OutstandingView: React.FC<OutstandingViewProps> = ({
                                     {subItem.paid.toLocaleString()}
                                   </td>
                                   <td
-                                    className={`py-1.5 px-3 text-right font-mono font-bold ${
-                                      subItem.balance > 20000
-                                        ? 'text-blue-700 bg-blue-50/60'
-                                        : subItem.balance > 0
+                                    className={`py-1.5 px-3 text-right font-mono font-bold ${subItem.balance > 20000
+                                      ? 'text-blue-700 bg-blue-50/60'
+                                      : subItem.balance > 0
                                         ? 'text-rose-700'
                                         : 'text-slate-400'
-                                    }`}
+                                      }`}
                                   >
                                     {subItem.balance.toLocaleString()}
                                   </td>

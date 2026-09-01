@@ -336,19 +336,16 @@ export const MonthlyRentView: React.FC<MonthlyRentViewProps> = ({
       </div>
 
       {/* Main DataGridView */}
-      <div className="flex-1 flex flex-col min-h-0">
-        <WinFormsDataGridView<MonthlyCharge>
-          id="monthly-rent-datagridview"
-          columns={columns}
-          data={filteredCharges}
-          keyExtractor={(c) => c.id}
-          selectedId={selectedChargeId}
-          onRowSelect={(c) => setSelectedChargeId(c.id)}
-          onRowDoubleClick={(c) => onViewTenantDetails?.(c.tenantId)}
-          maxHeight="calc(100vh - 290px)"
-          emptyMessage={`No monthly rent records found for ${selectedMonth}.`}
-        />
-      </div>
+      <WinFormsDataGridView<MonthlyCharge>
+        id="monthly-rent-datagridview"
+        columns={columns}
+        data={filteredCharges}
+        keyExtractor={(c) => c.id}
+        selectedId={selectedChargeId}
+        onRowSelect={(c) => setSelectedChargeId(c.id)}
+        onRowDoubleClick={(c) => onViewTenantDetails?.(c.tenantId)}
+        emptyMessage={`No monthly rent records found for ${selectedMonth}.`}
+      />
     </div>
   );
 };

@@ -149,7 +149,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         {/* Active Contracts */}
         <div
-          onClick={() => onNavigate('contracts')}
+          onClick={() => onNavigate('tenants')}
           className="bg-white border border-[#CBD5E1] rounded-[3px] p-3.5 shadow-xs cursor-pointer hover:border-emerald-600 transition-all relative overflow-hidden group"
         >
           <div className="flex items-start justify-between">
@@ -172,7 +172,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         {/* Expiring Contracts */}
         <div
-          onClick={() => onNavigate('contracts')}
+          onClick={() => onNavigate('tenants')}
           className="bg-white border border-[#CBD5E1] rounded-[3px] p-3.5 shadow-xs cursor-pointer hover:border-amber-600 transition-all relative overflow-hidden group"
         >
           <div className="flex items-start justify-between">
@@ -226,10 +226,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             badge={
               <button
                 type="button"
-                onClick={() => onNavigate('payments')}
+                onClick={() => onNavigate('reports')}
                 className="text-[11px] text-[#2563EB] hover:underline font-normal flex items-center gap-0.5 ml-auto cursor-pointer"
               >
-                <span>View All Transactions</span>
+                <span>View Reports & Journal</span>
                 <ArrowRight className="w-3 h-3" />
               </button>
             }
@@ -292,7 +292,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div className="space-y-2.5">
               {/* Alert 1: Expiring contracts */}
               <div
-                onClick={() => onNavigate('contracts')}
+                onClick={() => onNavigate('tenants')}
                 className="p-3 bg-amber-50/80 border border-amber-300 rounded-[3px] flex items-start gap-2.5 cursor-pointer hover:bg-amber-100/80 transition-colors"
               >
                 <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
@@ -304,7 +304,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     Send renewal notice or process lease extension addendum.
                   </div>
                   <div className="text-[10.5px] text-[#2563EB] font-semibold mt-1.5 flex items-center gap-1">
-                    <span>Review Contracts</span>
+                    <span>View in Tenants Hub</span>
                     <ArrowRight className="w-3 h-3" />
                   </div>
                 </div>
@@ -332,7 +332,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
               {/* Alert 3: Security cheques */}
               <div
-                onClick={() => onNavigate('cheques')}
+                onClick={() => onNavigate('reports')}
                 className="p-3 bg-blue-50/80 border border-blue-300 rounded-[3px] flex items-start gap-2.5 cursor-pointer hover:bg-blue-100/80 transition-colors"
               >
                 <CreditCard className="w-4 h-4 text-blue-700 shrink-0 mt-0.5" />
@@ -341,10 +341,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     {cheques.filter(c => c.status === 'Bounced').length} bounced &amp; {cheques.filter(c => c.status === 'Received').length} PDCs in custody
                   </div>
                   <div className="text-[11px] text-blue-800 mt-0.5 leading-snug">
-                    Manage security and post-dated cheques ready for bank deposit.
+                    Track security and post-dated cheques in Cheque Custody report.
                   </div>
                   <div className="text-[10.5px] text-[#2563EB] font-semibold mt-1.5 flex items-center gap-1">
-                    <span>Manage Cheques</span>
+                    <span>Open Custody Register</span>
                     <ArrowRight className="w-3 h-3" />
                   </div>
                 </div>

@@ -130,21 +130,15 @@ export interface ImportPreviewRow {
 export type NavModule =
   | 'dashboard'
   | 'tenants'
-  | 'contracts'
   | 'monthly_rent'
   | 'outstanding'
-  | 'payments'
-  | 'cheques'
   | 'reports';
 
 export type ActiveNavModule =
   | 'Dashboard'
   | 'Tenants'
-  | 'Contracts'
   | 'MonthlyRent'
   | 'Outstanding'
-  | 'Payments'
-  | 'Cheques'
   | 'Reports';
 
 export interface AppStateData {

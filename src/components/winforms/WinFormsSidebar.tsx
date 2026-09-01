@@ -66,13 +66,6 @@ export const WinFormsSidebar: React.FC<WinFormsSidebarProps> = ({
       badge: counts?.tenants,
     },
     {
-      id: 'contracts',
-      label: 'Contracts',
-      icon: <FileText className="w-4 h-4" />,
-      badge: counts?.contractsExpiring ? `${counts.contractsExpiring} Exp` : undefined,
-      badgeColor: 'bg-amber-500 text-slate-950 font-bold',
-    },
-    {
       id: 'monthly_rent',
       label: 'Monthly Rent',
       icon: <Calendar className="w-4 h-4" />,
@@ -83,17 +76,6 @@ export const WinFormsSidebar: React.FC<WinFormsSidebarProps> = ({
       icon: <AlertTriangle className="w-4 h-4" />,
       badge: counts?.outstandingCount,
       badgeColor: 'bg-rose-500 text-white',
-    },
-    {
-      id: 'payments',
-      label: 'Payments',
-      icon: <CreditCard className="w-4 h-4" />,
-    },
-    {
-      id: 'cheques',
-      label: 'Cheques',
-      icon: <CheckSquare className="w-4 h-4" />,
-      badge: counts?.chequesPending ? `${counts.chequesPending}` : undefined,
     },
     {
       id: 'reports',

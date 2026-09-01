@@ -23,11 +23,8 @@ import { SettingsModal } from './components/winforms/SettingsModal';
 // Views
 import { DashboardView } from './views/DashboardView';
 import { TenantsView } from './views/TenantsView';
-import { ContractsView } from './views/ContractsView';
 import { MonthlyRentView } from './views/MonthlyRentView';
 import { OutstandingView } from './views/OutstandingView';
-import { PaymentsView } from './views/PaymentsView';
-import { ChequesView } from './views/ChequesView';
 import { ReportsView } from './views/ReportsView';
 import { TenantDetailsView } from './views/TenantDetailsView';
 import { PaymentEntryView } from './views/PaymentEntryView';
@@ -253,16 +250,6 @@ export default function App() {
           />
         );
 
-      case 'contracts':
-        return (
-          <ContractsView
-            id="view-contracts"
-            tenants={data.tenants}
-            onViewContract={handleOpenTenantDetails}
-            onRenewContract={handleOpenRenewContract}
-          />
-        );
-
       case 'monthlyrent':
       case 'monthly_rent':
         return (
@@ -294,16 +281,6 @@ export default function App() {
           />
         );
 
-      case 'payments':
-        return (
-          <PaymentsView
-            id="view-payments"
-            payments={data.payments}
-            tenants={data.tenants}
-            onOpenNewPayment={() => handleOpenReceivePayment()}
-          />
-        );
-
       case 'receivepayment':
       case 'receive_payment':
         return (
@@ -313,18 +290,7 @@ export default function App() {
             outstandingCharges={data.outstandingCharges}
             initialTenantId={paymentPresetTenantId}
             onSavePayment={handleSavePayment}
-            onCancel={() => setActiveModule('payments')}
-          />
-        );
-
-      case 'cheques':
-        return (
-          <ChequesView
-            id="view-cheques"
-            cheques={data.cheques}
-            tenants={data.tenants}
-            onUpdateChequeStatus={handleUpdateChequeStatus}
-            onAddCheque={handleAddCheque}
+            onCancel={() => setActiveModule('outstanding')}
           />
         );
 

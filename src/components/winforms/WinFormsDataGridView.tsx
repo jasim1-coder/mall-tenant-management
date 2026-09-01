@@ -33,7 +33,7 @@ export function WinFormsDataGridView<T>({
   onRowDoubleClick,
   emptyMessage = 'No records found in current view.',
   className = '',
-  maxHeight = 'calc(100vh - 310px)',
+  maxHeight,
 }: WinFormsDataGridViewProps<T>) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -68,10 +68,13 @@ export function WinFormsDataGridView<T>({
   return (
     <div
       id={id}
-      className={`border border-[#CBD5E1] bg-white rounded-[2px] shadow-sm flex flex-col overflow-hidden text-[12px] font-sans ${className}`}
+      className={`border border-[#CBD5E1] bg-white rounded-[2px] shadow-xs flex flex-col flex-1 min-h-0 overflow-hidden text-[12px] font-sans ${className}`}
     >
       {/* Table Container with scroll */}
-      <div className="overflow-x-auto overflow-y-auto" style={{ maxHeight }}>
+      <div
+        className="flex-1 min-h-0 overflow-x-auto overflow-y-auto bg-white"
+        style={maxHeight ? { maxHeight } : undefined}
+      >
         <table className="w-full border-collapse text-left select-none">
           <thead className="sticky top-0 z-10 bg-[#E2E8F0] border-b border-[#94A3B8] shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
             <tr>

@@ -7,23 +7,21 @@ import {
   UserPlus,
   CreditCard,
   FileSpreadsheet,
-  CalendarDays,
   RefreshCw,
-  SlidersHorizontal,
-  Download
+  SlidersHorizontal
 } from 'lucide-react';
 import { ActiveNavModule } from '../../types';
 
 interface WinFormsWindowProps {
   id?: string;
   title?: string;
-  onNavigate: (module: ActiveNavModule) => void;
+  onNavigate?: (module: ActiveNavModule) => void;
   onNewTenant: () => void;
   onReceivePayment: () => void;
   onImportExcel: () => void;
   onOpenSettings: () => void;
   onRefresh: () => void;
-  onExportData: () => void;
+  onExportData?: () => void;
   onAbout?: () => void;
   children: React.ReactNode;
 }
@@ -31,13 +29,11 @@ interface WinFormsWindowProps {
 export const WinFormsWindow: React.FC<WinFormsWindowProps> = ({
   id,
   title = 'Safari Mall Doha - Tenant Management System',
-  onNavigate,
   onNewTenant,
   onReceivePayment,
   onImportExcel,
   onOpenSettings,
   onRefresh,
-  onExportData,
   children,
 }) => {
   return (
@@ -51,11 +47,8 @@ export const WinFormsWindow: React.FC<WinFormsWindowProps> = ({
           <div className="w-5 h-5 rounded-[3px] bg-[#2563EB] flex items-center justify-center text-white shadow-xs">
             <Building2 className="w-3 h-3" />
           </div>
-          <span className="tracking-wide text-white text-[12.5px] font-bold flex items-center gap-2">
+          <span className="tracking-wide text-white text-[12.5px] font-bold">
             {title}
-            <span className="text-[10px] px-2 py-0.5 bg-emerald-950/80 text-emerald-300 border border-emerald-700/60 rounded font-mono font-medium">
-              Data Saved Locally
-            </span>
           </span>
         </div>
 
@@ -111,7 +104,7 @@ export const WinFormsWindow: React.FC<WinFormsWindowProps> = ({
         </div>
       </div>
 
-      {/* 2. Direct, High-Utility Action Toolbar */}
+      {/* 2. Direct Action Toolbar */}
       <div className="h-9 bg-[#F8FAFC] border-b border-[#CBD5E1] px-3 flex items-center justify-between shrink-0 select-none overflow-x-auto shadow-xs">
         <div className="flex items-center gap-2">
           <button
@@ -142,60 +135,6 @@ export const WinFormsWindow: React.FC<WinFormsWindowProps> = ({
           >
             <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700" />
             <span>Import Excel</span>
-          </button>
-
-          <div className="h-4 w-[1px] bg-slate-300 mx-0.5"></div>
-
-          <button
-            type="button"
-            onClick={() => onNavigate('MonthlyRent')}
-            className="px-2.5 py-1 bg-white hover:bg-[#F1F5F9] border border-[#CBD5E1] text-[#1E293B] rounded-[3px] flex items-center gap-1.5 text-[11.5px] font-medium transition-colors shadow-xs cursor-pointer"
-            title="Generate Monthly Rent Charges"
-          >
-            <CalendarDays className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Monthly Charges</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={onExportData}
-            className="px-2.5 py-1 bg-white hover:bg-[#F1F5F9] border border-[#CBD5E1] text-[#1E293B] rounded-[3px] flex items-center gap-1.5 text-[11.5px] font-medium transition-colors shadow-xs cursor-pointer"
-            title="Export JSON Data Backup"
-          >
-            <Download className="w-3.5 h-3.5 text-slate-600" />
-            <span>Backup Data</span>
-          </button>
-        </div>
-
-        <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium">
-          <span className="hidden md:inline text-slate-400">Quick Jump:</span>
-          <button
-            type="button"
-            onClick={() => onNavigate('Dashboard')}
-            className="px-2 py-0.5 hover:bg-slate-200 text-slate-700 rounded transition-colors cursor-pointer"
-          >
-            Dashboard
-          </button>
-          <button
-            type="button"
-            onClick={() => onNavigate('Tenants')}
-            className="px-2 py-0.5 hover:bg-slate-200 text-slate-700 rounded transition-colors cursor-pointer"
-          >
-            Tenants
-          </button>
-          <button
-            type="button"
-            onClick={() => onNavigate('Outstanding')}
-            className="px-2 py-0.5 hover:bg-slate-200 text-slate-700 rounded transition-colors cursor-pointer"
-          >
-            Outstanding
-          </button>
-          <button
-            type="button"
-            onClick={() => onNavigate('Reports')}
-            className="px-2 py-0.5 hover:bg-slate-200 text-slate-700 rounded transition-colors cursor-pointer"
-          >
-            Reports
           </button>
         </div>
       </div>
