@@ -11,6 +11,17 @@ export interface RentScheduleItem {
   monthlyRent: number;
 }
 
+export interface ContractTermRecord {
+  id: string;
+  termPeriod: string;     // e.g. "01-Jan-2026 to 31-Dec-2026"
+  startDate: string;      // e.g. "01-Jan-2026"
+  endDate: string;        // e.g. "31-Dec-2026"
+  monthlyRent: number;    // e.g. 15000
+  executionDate: string;  // e.g. "15-Dec-2025"
+  status: 'Upcoming Renewal' | 'Active Current' | 'Completed' | 'Expired';
+  remarks?: string;
+}
+
 export interface Tenant {
   id: string;
   accountCode: string;   // e.g. "T-1001"
@@ -34,6 +45,14 @@ export interface Tenant {
   hasSecurityCheque?: boolean; // Security Cheque (Yes / No)
   hasRentCheques?: boolean;     // PDC / Rent Cheques (Yes / No)
   hasUtilityCheque?: boolean;   // Utility / Fit-Out Deposit Cheque (Yes / No)
+  contractHistory?: ContractTermRecord[];
+  upcomingRenewal?: {
+    startDate: string;
+    endDate: string;
+    monthlyRent: number;
+    executionDate: string;
+    remarks?: string;
+  };
 }
 
 export interface RecentActivity {
@@ -45,8 +64,18 @@ export interface RecentActivity {
   type: 'Payment' | 'Contract' | 'Cheque' | 'Charge' | 'Tenant';
 }
 
+export interface UtilityMeterReading {
+  prevReading?: number;
+  currReading?: number;
+  unitsUsed?: number;
+  ratePerUnit?: number;
+}
+
 export interface MonthlyCharge {
   id: string;
+  invoiceNo?: string;    // e.g. "INV-2026-08-0102"
+  invoiceDate?: string;  // e.g. "01-Aug-2026"
+  dueDate?: string;      // e.g. "10-Aug-2026"
   tenantId: string;
   tenantName: string;
   shopNumber: string;
@@ -54,6 +83,10 @@ export interface MonthlyCharge {
   rent: number;
   maintenance: number;
   electricity: number;
+  water?: number;
+  gas?: number;
+  electricityMeter?: UtilityMeterReading;
+  waterMeter?: UtilityMeterReading;
   totalDue: number;
   paid: number;
   outstanding: number;
@@ -63,7 +96,7 @@ export interface MonthlyCharge {
 export interface OutstandingChargeDetail {
   id: string;
   tenantId: string;
-  chargeType: 'Rent' | 'Electricity' | 'Maintenance' | 'Other';
+  chargeType: 'Rent' | 'Electricity' | 'Water' | 'Gas' | 'Maintenance' | 'Other';
   month: string;         // e.g. "May-2026"
   amount: number;
   paid: number;
@@ -113,16 +146,24 @@ export interface ImportPreviewRow {
   accountCode: string;
   tenantName: string;
   shop: string;
+  floor?: string;
+  category?: string;
   area: number;
   startDate: string;
   endDate: string;
   rent: number;
+  rentType?: RentType;
+  rentSchedule?: RentScheduleItem[];
   securityCheque?: 'Yes' | 'No' | string;
   rentCheques?: 'Yes' | 'No' | string;
   utilityCheque?: 'Yes' | 'No' | string;
   hasSecurityCheque?: boolean;
   hasRentCheques?: boolean;
   hasUtilityCheque?: boolean;
+  contactPerson?: string;
+  phone?: string;
+  email?: string;
+  remarks?: string;
   status: 'Valid' | 'Error';
   errorMessage?: string;
 }
@@ -154,5 +195,6 @@ export interface AppStateData {
     currentMonth: string;
     systemDate: string;
     propertyManager: string;
+    enableInvoicing?: boolean;
   };
 }

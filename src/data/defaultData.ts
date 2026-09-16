@@ -22,6 +22,28 @@ export const INITIAL_TENANTS: Tenant[] = [
     hasSecurityCheque: true,
     hasRentCheques: true,
     hasUtilityCheque: true,
+    contractHistory: [
+      {
+        id: 'ct-1001-2026',
+        termPeriod: '01-Jan-2026 to 31-Dec-2026',
+        startDate: '01-Jan-2026',
+        endDate: '31-Dec-2026',
+        monthlyRent: 15000,
+        executionDate: '15-Dec-2025',
+        status: 'Active Current',
+        remarks: 'Active current tenancy agreement'
+      },
+      {
+        id: 'ct-1001-2025',
+        termPeriod: '01-Jan-2025 to 31-Dec-2025',
+        startDate: '01-Jan-2025',
+        endDate: '31-Dec-2025',
+        monthlyRent: 14000,
+        executionDate: '10-Dec-2024',
+        status: 'Completed',
+        remarks: 'Prior term completed & successfully renewed'
+      }
+    ],
     rentSchedule: [
       { id: 'rs-1', fromMonth: 'Jan-2026', toMonth: 'Dec-2026', monthlyRent: 15000 },
       { id: 'rs-2', fromMonth: 'Jan-2027', toMonth: 'Dec-2027', monthlyRent: 16500 },
@@ -49,6 +71,18 @@ export const INITIAL_TENANTS: Tenant[] = [
     hasSecurityCheque: true,
     hasRentCheques: true,
     hasUtilityCheque: true,
+    contractHistory: [
+      {
+        id: 'ct-1002-2025',
+        termPeriod: '01-Apr-2025 to 30-Sep-2026',
+        startDate: '01-Apr-2025',
+        endDate: '30-Sep-2026',
+        monthlyRent: 20000,
+        executionDate: '15-Mar-2025',
+        status: 'Active Current',
+        remarks: '18-month lease agreement. Expiring soon.'
+      }
+    ]
   },
   {
     id: 't-1003',
@@ -71,6 +105,18 @@ export const INITIAL_TENANTS: Tenant[] = [
     hasSecurityCheque: true,
     hasRentCheques: false,
     hasUtilityCheque: false,
+    contractHistory: [
+      {
+        id: 'ct-1003-2025',
+        termPeriod: '01-Jan-2025 to 31-Dec-2025',
+        startDate: '01-Jan-2025',
+        endDate: '31-Dec-2025',
+        monthlyRent: 12500,
+        executionDate: '20-Dec-2024',
+        status: 'Expired',
+        remarks: 'Contract expired without timely renewal execution'
+      }
+    ],
     rentSchedule: [
       { id: 'rs-4', fromMonth: 'Jan-2025', toMonth: 'Dec-2025', monthlyRent: 12500 },
       { id: 'rs-5', fromMonth: 'Jan-2026', toMonth: 'Dec-2026', monthlyRent: 13500 },
@@ -471,6 +517,17 @@ export const INITIAL_OUTSTANDING_CHARGES: OutstandingChargeDetail[] = [
     dueDate: '10-Jul-2026'
   },
   {
+    id: 'oc-4-w',
+    tenantId: 't-1001',
+    chargeType: 'Water',
+    month: 'Jul-2026',
+    amount: 180,
+    paid: 0,
+    balance: 180,
+    priority: 5,
+    dueDate: '10-Jul-2026'
+  },
+  {
     id: 'oc-5',
     tenantId: 't-1001',
     chargeType: 'Maintenance',
@@ -478,7 +535,7 @@ export const INITIAL_OUTSTANDING_CHARGES: OutstandingChargeDetail[] = [
     amount: 1000,
     paid: 0,
     balance: 1000,
-    priority: 5,
+    priority: 6,
     dueDate: '10-Jul-2026'
   },
   // Gulf Foods
@@ -516,6 +573,28 @@ export const INITIAL_OUTSTANDING_CHARGES: OutstandingChargeDetail[] = [
     dueDate: '10-Jul-2026'
   },
   {
+    id: 'oc-8-w',
+    tenantId: 't-1002',
+    chargeType: 'Water',
+    month: 'Jul-2026',
+    amount: 450,
+    paid: 0,
+    balance: 450,
+    priority: 4,
+    dueDate: '10-Jul-2026'
+  },
+  {
+    id: 'oc-8-g',
+    tenantId: 't-1002',
+    chargeType: 'Gas',
+    month: 'Jul-2026',
+    amount: 800,
+    paid: 0,
+    balance: 800,
+    priority: 5,
+    dueDate: '10-Jul-2026'
+  },
+  {
     id: 'oc-9',
     tenantId: 't-1002',
     chargeType: 'Maintenance',
@@ -523,7 +602,7 @@ export const INITIAL_OUTSTANDING_CHARGES: OutstandingChargeDetail[] = [
     amount: 1500,
     paid: 0,
     balance: 1500,
-    priority: 4,
+    priority: 6,
     dueDate: '10-Jul-2026'
   },
   // XYZ Fashion
@@ -606,6 +685,28 @@ export const INITIAL_OUTSTANDING_CHARGES: OutstandingChargeDetail[] = [
     dueDate: '10-Jul-2026'
   },
   {
+    id: 'oc-16-w',
+    tenantId: 't-1006',
+    chargeType: 'Water',
+    month: 'Jul-2026',
+    amount: 320,
+    paid: 0,
+    balance: 320,
+    priority: 3,
+    dueDate: '10-Jul-2026'
+  },
+  {
+    id: 'oc-16-g',
+    tenantId: 't-1006',
+    chargeType: 'Gas',
+    month: 'Jul-2026',
+    amount: 650,
+    paid: 0,
+    balance: 650,
+    priority: 4,
+    dueDate: '10-Jul-2026'
+  },
+  {
     id: 'oc-17',
     tenantId: 't-1006',
     chargeType: 'Maintenance',
@@ -613,7 +714,7 @@ export const INITIAL_OUTSTANDING_CHARGES: OutstandingChargeDetail[] = [
     amount: 1000,
     paid: 0,
     balance: 1000,
-    priority: 3,
+    priority: 5,
     dueDate: '10-Jul-2026'
   },
   // Bella Opticals
@@ -883,6 +984,7 @@ export const INITIAL_APP_STATE: AppStateData = {
     currency: 'QAR',
     currentMonth: 'August 2026',
     systemDate: '30-Aug-2026',
-    propertyManager: 'Admin (Leasing & Operations)'
+    propertyManager: 'Admin (Leasing & Operations)',
+    enableInvoicing: false,
   }
 };

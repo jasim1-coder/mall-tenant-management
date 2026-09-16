@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   XCircle,
+  RotateCw,
 } from 'lucide-react';
 import { Tenant } from '../types';
 import { WinFormsDataGridView, ColumnDef } from '../components/winforms/WinFormsDataGridView';
@@ -27,10 +28,11 @@ interface TenantsViewProps {
   onOpenAddTenant?: () => void;
   onImportExcel?: () => void;
   onOpenImportExcel?: () => void;
-  onExportCsv?: () => void;
   onDeleteTenant?: (tenant: Tenant) => void;
   onReceivePayment?: (tenant: Tenant) => void;
   onReceivePaymentForTenant?: (tenant: Tenant) => void;
+  onRenewContract?: (tenant: Tenant) => void;
+  onOpenRenewContract?: (tenant: Tenant) => void;
 }
 
 export const TenantsView: React.FC<TenantsViewProps> = ({
@@ -45,12 +47,15 @@ export const TenantsView: React.FC<TenantsViewProps> = ({
   onImportExcel,
   onOpenImportExcel,
   onDeleteTenant,
+  onRenewContract,
+  onOpenRenewContract,
 }) => {
   const handleOpenDetails = onOpenDetails || onViewTenantDetails || (() => {});
   const handleEditTenant = onEditTenant || onOpenEditTenant || (() => {});
   const handleAddTenant = onAddTenant || onOpenAddTenant || (() => {});
   const handleImportExcel = onImportExcel || onOpenImportExcel || (() => {});
   const handleDeleteTenant = onDeleteTenant || (() => {});
+  const handleRenewContract = onRenewContract || onOpenRenewContract || (() => {});
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
@@ -149,18 +154,36 @@ export const TenantsView: React.FC<TenantsViewProps> = ({
     {
       key: 'contractEnd',
       header: 'Contract End',
-      width: '115px',
+      width: '120px',
       render: (t) => (
-        <span className="font-mono text-slate-700">{t.contractEnd}</span>
+        <div>
+          <span className="font-mono text-slate-800 font-medium block">{t.contractEnd}</span>
+          {t.upcomingRenewal && (
+            <span className="text-[10px] text-blue-700 font-sans block font-semibold leading-tight">
+              ↳ Next: {t.upcomingRenewal.endDate}
+            </span>
+          )}
+        </div>
       ),
     },
     {
       key: 'status',
       header: 'Status',
-      width: '100px',
+      width: '105px',
       align: 'center',
       render: (t) => {
         if (t.status === 'Active') {
+          if (t.upcomingRenewal) {
+            return (
+              <span
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10.5px] font-semibold bg-blue-100 text-blue-800 border border-blue-300"
+                title={`Contract renewed for next term: ${t.upcomingRenewal.startDate} to ${t.upcomingRenewal.endDate}`}
+              >
+                <CheckCircle2 className="w-3 h-3 text-blue-600" />
+                Renewed
+              </span>
+            );
+          }
           return (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800">
               <CheckCircle2 className="w-3 h-3 text-emerald-600" />
@@ -187,7 +210,7 @@ export const TenantsView: React.FC<TenantsViewProps> = ({
     {
       key: 'actions',
       header: 'Actions',
-      width: '110px',
+      width: '135px',
       align: 'center',
       sortable: false,
       render: (t) => (
@@ -210,9 +233,20 @@ export const TenantsView: React.FC<TenantsViewProps> = ({
               handleEditTenant(t);
             }}
             className="p-1 hover:bg-amber-100 text-amber-700 rounded transition-colors cursor-pointer"
-            title="Edit"
+            title="Edit Tenant"
           >
             <Edit className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleRenewContract(t);
+            }}
+            className="p-1 hover:bg-indigo-100 text-indigo-700 rounded transition-colors cursor-pointer"
+            title="Renew Lease Contract"
+          >
+            <RotateCw className="w-3.5 h-3.5" />
           </button>
           <button
             type="button"

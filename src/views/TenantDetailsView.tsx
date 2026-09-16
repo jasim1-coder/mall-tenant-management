@@ -13,7 +13,8 @@ import {
   FileText,
   RotateCw,
   Plus,
-  DollarSign
+  DollarSign,
+  CheckCircle2
 } from 'lucide-react';
 import { Tenant, MonthlyCharge, PaymentRecord, ChequeRecord, OutstandingChargeDetail } from '../types';
 import { WinFormsTabControl, TabItem } from '../components/winforms/WinFormsTabControl';
@@ -227,91 +228,174 @@ export const TenantDetailsView: React.FC<TenantDetailsViewProps> = ({
           </div>
         );
 
-      case 'contract':
+      case 'contract': {
+        // Collect history items from persistent store or baseline initial terms
+        const historyItems = tenant.contractHistory && tenant.contractHistory.length > 0
+          ? [...tenant.contractHistory]
+          : (() => {
+              const items = [
+                {
+                  id: `ct-curr-${tenant.id}`,
+                  termPeriod: `${tenant.contractStart} to ${tenant.contractEnd}`,
+                  startDate: tenant.contractStart,
+                  endDate: tenant.contractEnd,
+                  monthlyRent: tenant.monthlyRent,
+                  executionDate: tenant.contractStart,
+                  status: (tenant.status === 'Expired' ? 'Expired' : 'Active Current') as any,
+                  remarks: tenant.remarks || 'Active tenancy agreement',
+                }
+              ];
+
+              const startParts = tenant.contractStart.split('-');
+              const endParts = tenant.contractEnd.split('-');
+              const startYear = parseInt(startParts[startParts.length - 1], 10) || 2026;
+              const endYear = parseInt(endParts[endParts.length - 1], 10) || 2026;
+              if (startYear >= 2026) {
+                const prevStartYear = startYear - 1;
+                const prevEndYear = endYear - 1;
+                const prevStart = `${startParts[0]}-${startParts[1] || 'Jan'}-${prevStartYear}`;
+                const prevEnd = `${endParts[0]}-${endParts[1] || 'Dec'}-${prevEndYear}`;
+                const prevExec = `15-Dec-${prevStartYear - 1}`;
+                items.push({
+                  id: `ct-prev-${tenant.id}`,
+                  termPeriod: `${prevStart} to ${prevEnd}`,
+                  startDate: prevStart,
+                  endDate: prevEnd,
+                  monthlyRent: Math.round(tenant.monthlyRent * 0.92),
+                  executionDate: prevExec,
+                  status: 'Completed' as any,
+                  remarks: 'Prior term completed & renewed',
+                });
+              }
+              return items;
+            })();
+
         return (
-          <div className="space-y-3 text-[12px]">
-            <WinFormsGroupBox title="Contract Terms & Renewal History">
-              <div className="grid grid-cols-2 gap-4 p-2 bg-slate-50 border border-slate-200 rounded-[2px]">
+          <div className="space-y-3.5 text-[12px]">
+            {/* Active / Current Contract Summary */}
+            <WinFormsGroupBox title="Current Active Contract Terms">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-2.5 bg-slate-50 border border-slate-200 rounded-[2px]">
                 <div>
-                  <span className="text-slate-500 block text-[11px]">Lease Start Date:</span>
-                  <strong className="font-mono text-[13px] text-slate-800">{tenant.contractStart}</strong>
+                  <span className="text-slate-500 block text-[11px]">Active Lease Term:</span>
+                  <strong className="font-mono text-[12.5px] text-slate-900">
+                    {tenant.contractStart} to {tenant.contractEnd}
+                  </strong>
                 </div>
                 <div>
-                  <span className="text-slate-500 block text-[11px]">Lease Expiry Date:</span>
-                  <strong className="font-mono text-[13px] text-slate-800">{tenant.contractEnd}</strong>
+                  <span className="text-slate-500 block text-[11px]">Agreed Monthly Rent:</span>
+                  <strong className="font-mono text-[13px] text-emerald-800">
+                    {formatCurrency(tenant.monthlyRent)}
+                  </strong>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-[11px]">Contract Status:</span>
+                  <span className={`inline-flex px-2 py-0.5 rounded text-[11px] font-bold mt-0.5 ${
+                    tenant.status === 'Active' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
+                    tenant.status === 'Expiring' ? 'bg-amber-100 text-amber-900 border border-amber-300' :
+                    'bg-rose-100 text-rose-800 border border-rose-300'
+                  }`}>
+                    {tenant.status === 'Active' && tenant.upcomingRenewal ? 'Active (Renewed for Next Term)' : tenant.status}
+                  </span>
                 </div>
               </div>
 
-              <div className="mt-3">
-                <h4 className="font-semibold text-slate-800 mb-1.5 text-[11.5px]">Renewal &amp; Lease History</h4>
-                <div className="border border-[#CBD5E1] rounded-[2px] bg-white overflow-hidden">
-                  <table className="w-full text-left text-[11px]">
-                    <thead className="bg-[#E2E8F0] border-b border-[#CBD5E1] text-slate-700">
-                      <tr>
-                        <th className="py-1.5 px-3">Term Period</th>
-                        <th className="py-1.5 px-3 text-right">Agreed Rent</th>
-                        <th className="py-1.5 px-3">Execution Date</th>
-                        <th className="py-1.5 px-3">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {(() => {
-                        // Dynamically calculate prior term year
-                        const startParts = tenant.contractStart.split('-');
-                        const endParts = tenant.contractEnd.split('-');
-                        const startYear = parseInt(startParts[startParts.length - 1], 10) || 2026;
-                        const endYear = parseInt(endParts[endParts.length - 1], 10) || 2026;
-                        const prevStartYear = startYear - 1;
-                        const prevEndYear = endYear - 1;
-                        const prevStart = `${startParts[0]}-${startParts[1] || 'Jan'}-${prevStartYear}`;
-                        const prevEnd = `${endParts[0]}-${endParts[1] || 'Dec'}-${prevEndYear}`;
-                        const prevExec = `15-Dec-${prevStartYear - 1}`;
-
-                        return (
-                          <>
-                            <tr>
-                              <td className="py-1.5 px-3 font-mono">{tenant.contractStart} to {tenant.contractEnd}</td>
-                              <td className="py-1.5 px-3 font-mono text-right font-bold">{formatCurrency(tenant.monthlyRent)}</td>
-                              <td className="py-1.5 px-3 font-mono text-slate-500">{tenant.contractStart}</td>
-                              <td className="py-1.5 px-3">
-                                {tenant.status === 'Active' && (
-                                  <span className="text-emerald-700 font-semibold">Active Current Term</span>
-                                )}
-                                {tenant.status === 'Expiring' && (
-                                  <span className="text-amber-700 font-semibold">Expiring Term</span>
-                                )}
-                                {tenant.status === 'Expired' && (
-                                  <span className="text-rose-700 font-semibold">Expired Term</span>
-                                )}
-                              </td>
-                            </tr>
-                            <tr className="bg-slate-50 text-slate-500">
-                              <td className="py-1.5 px-3 font-mono">{prevStart} to {prevEnd}</td>
-                              <td className="py-1.5 px-3 font-mono text-right">{formatCurrency(Math.round(tenant.monthlyRent * 0.92))}</td>
-                              <td className="py-1.5 px-3 font-mono">{prevExec}</td>
-                              <td className="py-1.5 px-3">Completed / Renewed</td>
-                            </tr>
-                          </>
-                        );
-                      })()}
-                    </tbody>
-                  </table>
+              {/* Upcoming Signed Renewal Callout if present */}
+              {tenant.upcomingRenewal && (
+                <div className="mt-2.5 p-2.5 bg-blue-50 border border-blue-300 rounded-[2px] flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-blue-900 text-[11.5px]">
+                    <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
+                    <div>
+                      <span className="font-bold">Next Term Renewal Signed:</span>{' '}
+                      <span className="font-mono font-semibold">{tenant.upcomingRenewal.startDate} to {tenant.upcomingRenewal.endDate}</span> at{' '}
+                      <span className="font-mono font-bold text-blue-800">{formatCurrency(tenant.upcomingRenewal.monthlyRent)}/mo</span>.
+                      <span className="text-slate-500 text-[10.5px] block mt-0.5">
+                        (Executed on {tenant.upcomingRenewal.executionDate}. Becomes active upon arrival of next term date.)
+                      </span>
+                    </div>
+                  </div>
                 </div>
+              )}
+            </WinFormsGroupBox>
+
+            {/* Renewal & Lease History */}
+            <WinFormsGroupBox title="Complete Contract & Renewal History">
+              <div className="border border-[#CBD5E1] rounded-[2px] bg-white overflow-hidden">
+                <table className="w-full text-left text-[11.5px]">
+                  <thead className="bg-[#E2E8F0] border-b border-[#CBD5E1] text-slate-800">
+                    <tr>
+                      <th className="py-1.5 px-3 border-r border-[#CBD5E1]">Term Period</th>
+                      <th className="py-1.5 px-3 border-r border-[#CBD5E1] text-right">Agreed Rent</th>
+                      <th className="py-1.5 px-3 border-r border-[#CBD5E1]">Execution Date</th>
+                      <th className="py-1.5 px-3 border-r border-[#CBD5E1] text-center">Term Status</th>
+                      <th className="py-1.5 px-3">Remarks / Addendum</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {historyItems.map((item) => (
+                      <tr
+                        key={item.id}
+                        className={
+                          item.status === 'Upcoming Renewal'
+                            ? 'bg-blue-50/60'
+                            : item.status === 'Active Current'
+                            ? 'bg-emerald-50/40 font-medium'
+                            : 'hover:bg-slate-50'
+                        }
+                      >
+                        <td className="py-2 px-3 border-r border-slate-200 font-mono font-bold text-slate-800">
+                          {item.termPeriod || `${item.startDate} to ${item.endDate}`}
+                        </td>
+                        <td className="py-2 px-3 border-r border-slate-200 font-mono text-right font-bold text-slate-900">
+                          {formatCurrency(item.monthlyRent)}
+                        </td>
+                        <td className="py-2 px-3 border-r border-slate-200 font-mono text-slate-600">
+                          {item.executionDate}
+                        </td>
+                        <td className="py-2 px-3 border-r border-slate-200 text-center">
+                          {item.status === 'Upcoming Renewal' && (
+                            <span className="px-2 py-0.5 rounded text-[10.5px] font-bold bg-blue-100 text-blue-800 border border-blue-300">
+                              Upcoming Term
+                            </span>
+                          )}
+                          {item.status === 'Active Current' && (
+                            <span className="px-2 py-0.5 rounded text-[10.5px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                              Active Current
+                            </span>
+                          )}
+                          {item.status === 'Completed' && (
+                            <span className="px-2 py-0.5 rounded text-[10.5px] font-medium bg-slate-100 text-slate-700 border border-slate-300">
+                              Completed
+                            </span>
+                          )}
+                          {item.status === 'Expired' && (
+                            <span className="px-2 py-0.5 rounded text-[10.5px] font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                              Expired
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-2 px-3 text-slate-600 italic text-[11px]">
+                          {item.remarks || '-'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
 
               <div className="pt-3 flex justify-end">
                 <button
                   type="button"
                   onClick={() => handleRenewContract(tenant)}
-                  className="px-3.5 py-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold rounded-[2px] text-[11.5px] flex items-center gap-1.5 shadow-xs cursor-pointer"
+                  className="px-4 py-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold rounded-[2px] text-[11.5px] flex items-center gap-1.5 shadow-xs cursor-pointer"
                 >
                   <RotateCw className="w-3.5 h-3.5" />
-                  <span>[ Renew Contract for Next Term ]</span>
+                  <span>Renew Contract / Issue Next Term</span>
                 </button>
               </div>
             </WinFormsGroupBox>
           </div>
         );
+      }
 
       case 'schedule':
         return (
@@ -542,6 +626,15 @@ export const TenantDetailsView: React.FC<TenantDetailsViewProps> = ({
 
         {/* Action buttons */}
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => handleRenewContract(tenant)}
+            className="px-3 py-1 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold text-[11.5px] rounded-[2px] shadow-xs flex items-center gap-1 cursor-pointer"
+            title="Renew this tenant's contract for next cycle"
+          >
+            <RotateCw className="w-3 h-3" />
+            <span>Renew Contract</span>
+          </button>
           <button
             type="button"
             onClick={() => handleReceivePayment(tenant)}

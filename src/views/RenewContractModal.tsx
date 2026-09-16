@@ -9,7 +9,13 @@ interface RenewContractModalProps {
   tenant: Tenant | null;
   isOpen: boolean;
   onClose: () => void;
-  onConfirmRenewal: (tenantId: string, newEndDate: string, newMonthlyRent: number, remarks: string) => void;
+  onConfirmRenewal: (
+    tenantId: string,
+    newEndDate: string,
+    newMonthlyRent: number,
+    remarks: string,
+    newStartDate?: string
+  ) => void;
 }
 
 export const RenewContractModal: React.FC<RenewContractModalProps> = ({
@@ -27,10 +33,27 @@ export const RenewContractModal: React.FC<RenewContractModalProps> = ({
 
   useEffect(() => {
     if (tenant) {
-      // Calculate a standard 1 year renewal from previous end date
-      setNewStartDate(tenant.contractEnd || '01-Jan-2027');
-      setNewEndDate('31-Dec-2027');
-      const calculatedRent = Math.round(tenant.monthlyRent * 1.05);
+      // Calculate a standard 1 year renewal from current contract end date or existing signed renewal end date
+      const endStr = tenant.upcomingRenewal ? tenant.upcomingRenewal.endDate : (tenant.contractEnd || '31-Dec-2026');
+      const baseRent = tenant.upcomingRenewal ? tenant.upcomingRenewal.monthlyRent : tenant.monthlyRent;
+      
+      const parts = endStr.split('-');
+      if (parts.length === 3) {
+        const year = parseInt(parts[2], 10);
+        if (!isNaN(year)) {
+          const nextYear = year + 1;
+          setNewStartDate(`01-Jan-${nextYear}`);
+          setNewEndDate(`31-Dec-${nextYear}`);
+        } else {
+          setNewStartDate(endStr);
+          setNewEndDate('31-Dec-2027');
+        }
+      } else {
+        setNewStartDate(endStr);
+        setNewEndDate('31-Dec-2027');
+      }
+
+      const calculatedRent = Math.round(baseRent * 1.05);
       setNewRent(calculatedRent);
       setEscalationPercent(5);
       setRenewalRemarks(`Contract renewed for 12 months with 5% lease escalation.`);
@@ -47,7 +70,7 @@ export const RenewContractModal: React.FC<RenewContractModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onConfirmRenewal(tenant.id, newEndDate, Number(newRent), renewalRemarks);
+    onConfirmRenewal(tenant.id, newEndDate, Number(newRent), renewalRemarks, newStartDate);
     onClose();
   };
 

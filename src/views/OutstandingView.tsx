@@ -4,7 +4,12 @@ import {
   ChevronRight,
   Search,
   Download,
-  CreditCard
+  CreditCard,
+  Building2,
+  Zap,
+  Droplets,
+  Flame,
+  Wrench,
 } from 'lucide-react';
 import { OutstandingChargeDetail, Tenant } from '../types';
 import { formatCurrency } from '../services/dataStore';
@@ -23,6 +28,8 @@ interface TenantOutstandingSummary {
   shopNumber: string;
   rentOutstanding: number;
   electricityOutstanding: number;
+  waterOutstanding: number;
+  gasOutstanding: number;
   maintenanceOutstanding: number;
   totalOutstanding: number;
   items: OutstandingChargeDetail[];
@@ -33,7 +40,6 @@ export const OutstandingView: React.FC<OutstandingViewProps> = ({
   tenants,
   outstandingCharges,
   onReceivePaymentForTenant,
-  onOpenTenantDetails,
 }) => {
   const [tenantFilter, setTenantFilter] = useState('All');
   const [shopFilter, setShopFilter] = useState('All');
@@ -46,7 +52,6 @@ export const OutstandingView: React.FC<OutstandingViewProps> = ({
 
   // Group outstanding charges by tenant
   const groupedData: TenantOutstandingSummary[] = useMemo(() => {
-    // Map of tenant id to details
     const map = new Map<string, OutstandingChargeDetail[]>();
 
     outstandingCharges.forEach((item) => {
@@ -76,6 +81,14 @@ export const OutstandingView: React.FC<OutstandingViewProps> = ({
         .filter((i) => i.chargeType === 'Electricity')
         .reduce((sum, i) => sum + i.balance, 0);
 
+      const waterOutstanding = items
+        .filter((i) => i.chargeType === 'Water')
+        .reduce((sum, i) => sum + i.balance, 0);
+
+      const gasOutstanding = items
+        .filter((i) => i.chargeType === 'Gas')
+        .reduce((sum, i) => sum + i.balance, 0);
+
       const maintenanceOutstanding = items
         .filter((i) => i.chargeType === 'Maintenance')
         .reduce((sum, i) => sum + i.balance, 0);
@@ -88,6 +101,8 @@ export const OutstandingView: React.FC<OutstandingViewProps> = ({
         shopNumber: tenant.shopNumber,
         rentOutstanding,
         electricityOutstanding,
+        waterOutstanding,
+        gasOutstanding,
         maintenanceOutstanding,
         totalOutstanding,
         items,
@@ -102,12 +117,16 @@ export const OutstandingView: React.FC<OutstandingViewProps> = ({
       total: 0,
       rent: 0,
       electricity: 0,
+      water: 0,
+      gas: 0,
       maintenance: 0,
     };
     groupedData.forEach((g) => {
       totals.total += g.totalOutstanding;
       totals.rent += g.rentOutstanding;
       totals.electricity += g.electricityOutstanding;
+      totals.water += g.waterOutstanding;
+      totals.gas += g.gasOutstanding;
       totals.maintenance += g.maintenanceOutstanding;
     });
     return totals;
@@ -138,6 +157,52 @@ export const OutstandingView: React.FC<OutstandingViewProps> = ({
     a.href = url;
     a.download = `Outstanding_Aging_Report_${Date.now()}.csv`;
     a.click();
+  };
+
+  const renderChargeBadge = (type: string) => {
+    switch (type) {
+      case 'Rent':
+        return (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[2px] bg-blue-50 text-blue-800 text-[10.5px] font-semibold border border-blue-200">
+            <Building2 className="w-3 h-3 text-blue-600" />
+            Rent
+          </span>
+        );
+      case 'Electricity':
+        return (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[2px] bg-amber-50 text-amber-900 text-[10.5px] font-semibold border border-amber-300">
+            <Zap className="w-3 h-3 text-amber-600" />
+            Electricity
+          </span>
+        );
+      case 'Water':
+        return (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[2px] bg-cyan-50 text-cyan-900 text-[10.5px] font-semibold border border-cyan-300">
+            <Droplets className="w-3 h-3 text-cyan-600" />
+            Water
+          </span>
+        );
+      case 'Gas':
+        return (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[2px] bg-orange-50 text-orange-950 text-[10.5px] font-semibold border border-orange-300">
+            <Flame className="w-3 h-3 text-orange-600" />
+            Gas
+          </span>
+        );
+      case 'Maintenance':
+        return (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[2px] bg-slate-100 text-slate-800 text-[10.5px] font-semibold border border-slate-300">
+            <Wrench className="w-3 h-3 text-slate-600" />
+            CAM / Maint
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded-[2px] bg-gray-100 text-gray-800 text-[10.5px] font-medium border border-gray-200">
+            {type}
+          </span>
+        );
+    }
   };
 
   return (
@@ -207,12 +272,14 @@ export const OutstandingView: React.FC<OutstandingViewProps> = ({
             <select
               value={chargeTypeFilter}
               onChange={(e) => setChargeTypeFilter(e.target.value)}
-              className="bg-white border border-[#CBD5E1] rounded-[2px] px-2 py-0.5"
+              className="bg-white border border-[#CBD5E1] rounded-[2px] px-2 py-0.5 font-medium"
             >
               <option value="All">All Charges</option>
               <option value="Rent">Rent</option>
               <option value="Electricity">Electricity</option>
-              <option value="Maintenance">Maintenance</option>
+              <option value="Water">Water</option>
+              <option value="Gas">Gas</option>
+              <option value="Maintenance">Maintenance / CAM</option>
             </select>
           </div>
 
@@ -237,29 +304,56 @@ export const OutstandingView: React.FC<OutstandingViewProps> = ({
         </div>
       </div>
 
-      {/* Financial Summary Bar */}
-      <div className="bg-white border border-[#CBD5E1] rounded-[2px] p-2.5 grid grid-cols-2 sm:grid-cols-4 gap-3 shadow-xs">
+      {/* Financial Summary Bar - 6 Categorized Metric Cards */}
+      <div className="bg-white border border-[#CBD5E1] rounded-[2px] p-2.5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 shadow-xs">
         <div className="border-r border-[#E2E8F0] pr-2">
-          <div className="text-[10.5px] font-semibold text-slate-500 uppercase tracking-wide">Total Outstanding</div>
-          <div className="text-[15px] font-bold font-mono text-slate-900 mt-0.5">
+          <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Total Outstanding</div>
+          <div className="text-[14px] font-bold font-mono text-slate-900 mt-0.5">
             {formatCurrency(summaryTotals.total)}
           </div>
         </div>
         <div className="border-r border-[#E2E8F0] pr-2">
-          <div className="text-[10.5px] font-semibold text-slate-500 uppercase tracking-wide">Rent Outstanding</div>
-          <div className="text-[15px] font-bold font-mono text-slate-800 mt-0.5">
+          <div className="text-[10px] font-semibold text-blue-700 uppercase tracking-wide flex items-center gap-1">
+            <Building2 className="w-3 h-3 text-blue-600" />
+            Rent Dues
+          </div>
+          <div className="text-[14px] font-bold font-mono text-blue-900 mt-0.5">
             {formatCurrency(summaryTotals.rent)}
           </div>
         </div>
         <div className="border-r border-[#E2E8F0] pr-2">
-          <div className="text-[10.5px] font-semibold text-slate-500 uppercase tracking-wide">Electricity Pending</div>
-          <div className="text-[15px] font-bold font-mono text-slate-800 mt-0.5">
+          <div className="text-[10px] font-semibold text-amber-700 uppercase tracking-wide flex items-center gap-1">
+            <Zap className="w-3 h-3 text-amber-600" />
+            Electricity
+          </div>
+          <div className="text-[14px] font-bold font-mono text-amber-900 mt-0.5">
             {formatCurrency(summaryTotals.electricity)}
           </div>
         </div>
-        <div className="pr-2">
-          <div className="text-[10.5px] font-semibold text-slate-500 uppercase tracking-wide">Maintenance Pending</div>
-          <div className="text-[15px] font-bold font-mono text-slate-800 mt-0.5">
+        <div className="border-r border-[#E2E8F0] pr-2">
+          <div className="text-[10px] font-semibold text-cyan-700 uppercase tracking-wide flex items-center gap-1">
+            <Droplets className="w-3 h-3 text-cyan-600" />
+            Water
+          </div>
+          <div className="text-[14px] font-bold font-mono text-cyan-900 mt-0.5">
+            {formatCurrency(summaryTotals.water)}
+          </div>
+        </div>
+        <div className="border-r border-[#E2E8F0] pr-2">
+          <div className="text-[10px] font-semibold text-orange-700 uppercase tracking-wide flex items-center gap-1">
+            <Flame className="w-3 h-3 text-orange-600" />
+            Gas
+          </div>
+          <div className="text-[14px] font-bold font-mono text-orange-950 mt-0.5">
+            {formatCurrency(summaryTotals.gas)}
+          </div>
+        </div>
+        <div className="pr-1">
+          <div className="text-[10px] font-semibold text-slate-600 uppercase tracking-wide flex items-center gap-1">
+            <Wrench className="w-3 h-3 text-slate-500" />
+            CAM / Maint
+          </div>
+          <div className="text-[14px] font-bold font-mono text-slate-800 mt-0.5">
             {formatCurrency(summaryTotals.maintenance)}
           </div>
         </div>
@@ -273,11 +367,13 @@ export const OutstandingView: React.FC<OutstandingViewProps> = ({
               <th className="py-1.5 px-2 w-8 text-center border-r border-[#CBD5E1]"></th>
               <th className="py-1.5 px-3 border-r border-[#CBD5E1] font-semibold">Tenant</th>
               <th className="py-1.5 px-3 border-r border-[#CBD5E1] font-semibold">Shop</th>
-              <th className="py-1.5 px-3 border-r border-[#CBD5E1] font-semibold text-right">Rent Outstanding</th>
-              <th className="py-1.5 px-3 border-r border-[#CBD5E1] font-semibold text-right">Electricity</th>
-              <th className="py-1.5 px-3 border-r border-[#CBD5E1] font-semibold text-right">Maintenance</th>
+              <th className="py-1.5 px-2.5 border-r border-[#CBD5E1] font-semibold text-right">Rent Due</th>
+              <th className="py-1.5 px-2.5 border-r border-[#CBD5E1] font-semibold text-right">Electricity</th>
+              <th className="py-1.5 px-2.5 border-r border-[#CBD5E1] font-semibold text-right">Water</th>
+              <th className="py-1.5 px-2.5 border-r border-[#CBD5E1] font-semibold text-right">Gas</th>
+              <th className="py-1.5 px-2.5 border-r border-[#CBD5E1] font-semibold text-right">CAM / Maint</th>
               <th className="py-1.5 px-3 border-r border-[#CBD5E1] font-semibold text-right">Total Outstanding</th>
-              <th className="py-1.5 px-3 font-semibold text-center w-28">Action</th>
+              <th className="py-1.5 px-3 font-semibold text-center w-24">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#CBD5E1]">
@@ -303,17 +399,23 @@ export const OutstandingView: React.FC<OutstandingViewProps> = ({
                     <td className="py-2 px-3 border-r border-[#E2E8F0] font-bold text-slate-900">
                       {tenantGroup.tenantName}
                     </td>
-                    <td className="py-2 px-3 border-r border-[#E2E8F0] font-mono text-slate-700">
+                    <td className="py-2 px-3 border-r border-[#E2E8F0] font-mono text-slate-700 font-semibold">
                       {tenantGroup.shopNumber}
                     </td>
-                    <td className="py-2 px-3 border-r border-[#E2E8F0] text-right font-mono font-bold text-slate-800">
-                      {tenantGroup.rentOutstanding.toLocaleString()}
+                    <td className="py-2 px-2.5 border-r border-[#E2E8F0] text-right font-mono font-bold text-blue-900">
+                      {tenantGroup.rentOutstanding > 0 ? tenantGroup.rentOutstanding.toLocaleString() : '-'}
                     </td>
-                    <td className="py-2 px-3 border-r border-[#E2E8F0] text-right font-mono text-slate-700">
-                      {tenantGroup.electricityOutstanding.toLocaleString()}
+                    <td className="py-2 px-2.5 border-r border-[#E2E8F0] text-right font-mono text-amber-900">
+                      {tenantGroup.electricityOutstanding > 0 ? tenantGroup.electricityOutstanding.toLocaleString() : '-'}
                     </td>
-                    <td className="py-2 px-3 border-r border-[#E2E8F0] text-right font-mono text-slate-700">
-                      {tenantGroup.maintenanceOutstanding.toLocaleString()}
+                    <td className="py-2 px-2.5 border-r border-[#E2E8F0] text-right font-mono text-cyan-900 font-medium">
+                      {tenantGroup.waterOutstanding > 0 ? tenantGroup.waterOutstanding.toLocaleString() : '-'}
+                    </td>
+                    <td className="py-2 px-2.5 border-r border-[#E2E8F0] text-right font-mono text-orange-950 font-medium">
+                      {tenantGroup.gasOutstanding > 0 ? tenantGroup.gasOutstanding.toLocaleString() : '-'}
+                    </td>
+                    <td className="py-2 px-2.5 border-r border-[#E2E8F0] text-right font-mono text-slate-700">
+                      {tenantGroup.maintenanceOutstanding > 0 ? tenantGroup.maintenanceOutstanding.toLocaleString() : '-'}
                     </td>
                     <td
                       className={`py-2 px-3 border-r border-[#E2E8F0] text-right font-mono font-bold ${isOver20k
@@ -343,30 +445,34 @@ export const OutstandingView: React.FC<OutstandingViewProps> = ({
                   {/* Detail Expanded Sub-table */}
                   {isExpanded && (
                     <tr className="bg-slate-100/70">
-                      <td colSpan={8} className="p-3 pl-8">
+                      <td colSpan={10} className="p-3 pl-8">
                         <div className="bg-white border border-[#CBD5E1] rounded-[2px] shadow-inner overflow-hidden">
-                          <div className="bg-[#E2E8F0] px-3 py-1 text-[11px] font-semibold text-slate-700 border-b border-[#CBD5E1] flex items-center justify-between">
-                            <span>Detailed Monthly Charge Ledger: {tenantGroup.tenantName}</span>
+                          <div className="bg-[#E2E8F0] px-3 py-1.5 text-[11px] font-semibold text-slate-700 border-b border-[#CBD5E1] flex items-center justify-between">
+                            <span>Detailed Monthly Charge & Utility Ledger: {tenantGroup.tenantName}</span>
                             <span className="text-[10px] text-slate-500">Sorted by FIFO collection order</span>
                           </div>
                           <table className="w-full text-left text-[11px] border-collapse">
                             <thead className="bg-[#F1F5F9] border-b border-[#E2E8F0] text-slate-600">
                               <tr>
-                                <th className="py-1 px-3 border-r border-[#E2E8F0]">Charge</th>
-                                <th className="py-1 px-3 border-r border-[#E2E8F0]">Month</th>
-                                <th className="py-1 px-3 border-r border-[#E2E8F0] text-right">Amount</th>
-                                <th className="py-1 px-3 border-r border-[#E2E8F0] text-right">Paid</th>
-                                <th className="py-1 px-3 text-right">Balance</th>
+                                <th className="py-1 px-3 border-r border-[#E2E8F0]">Charge Category</th>
+                                <th className="py-1 px-3 border-r border-[#E2E8F0]">Billing Month</th>
+                                <th className="py-1 px-3 border-r border-[#E2E8F0]">Due Date</th>
+                                <th className="py-1 px-3 border-r border-[#E2E8F0] text-right">Invoiced Amount (QAR)</th>
+                                <th className="py-1 px-3 border-r border-[#E2E8F0] text-right">Paid (QAR)</th>
+                                <th className="py-1 px-3 text-right">Balance Due (QAR)</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-[#E2E8F0]">
                               {tenantGroup.items.map((subItem) => (
                                 <tr key={subItem.id} className="hover:bg-slate-50">
                                   <td className="py-1.5 px-3 border-r border-[#E2E8F0] font-medium text-slate-800">
-                                    {subItem.chargeType}
+                                    {renderChargeBadge(subItem.chargeType)}
                                   </td>
                                   <td className="py-1.5 px-3 border-r border-[#E2E8F0] font-mono text-slate-600">
                                     {subItem.month}
+                                  </td>
+                                  <td className="py-1.5 px-3 border-r border-[#E2E8F0] font-mono text-slate-500 text-[10.5px]">
+                                    {subItem.dueDate || '10-Jul-2026'}
                                   </td>
                                   <td className="py-1.5 px-3 border-r border-[#E2E8F0] text-right font-mono">
                                     {subItem.amount.toLocaleString()}
@@ -401,3 +507,4 @@ export const OutstandingView: React.FC<OutstandingViewProps> = ({
     </div>
   );
 };
+

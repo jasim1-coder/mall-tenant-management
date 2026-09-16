@@ -11,26 +11,48 @@ import {
   DollarSign,
   Search,
   Filter,
-  Receipt
+  Receipt,
+  SlidersHorizontal,
+  Droplet,
+  FileText
 } from 'lucide-react';
 import { MonthlyCharge, PaymentStatus, Tenant } from '../types';
 import { WinFormsDataGridView, ColumnDef } from '../components/winforms/WinFormsDataGridView';
 import { formatCurrency } from '../services/dataStore';
+import { EditMonthlyChargeModal } from './EditMonthlyChargeModal';
+import { InvoiceModal } from './InvoiceModal';
 
 interface MonthlyRentViewProps {
   id?: string;
   monthlyCharges: MonthlyCharge[];
+  tenants?: Tenant[];
+  enableInvoicing?: boolean;
   onReceivePaymentForCharge?: (charge: MonthlyCharge) => void;
   onGenerateCharges?: (month: string) => void;
   onViewTenantDetails?: (tenantId: string) => void;
+  onSaveCharge?: (values: {
+    id?: string;
+    tenantId: string;
+    tenantName: string;
+    shopNumber: string;
+    month: string;
+    rent: number;
+    maintenance: number;
+    electricity: number;
+    water: number;
+    gas: number;
+  }) => void;
 }
 
 export const MonthlyRentView: React.FC<MonthlyRentViewProps> = ({
   id,
   monthlyCharges,
+  tenants = [],
+  enableInvoicing = false,
   onReceivePaymentForCharge,
   onGenerateCharges,
   onViewTenantDetails,
+  onSaveCharge,
 }) => {
   const [selectedMonth, setSelectedMonth] = useState('August 2026');
   const [statusFilter, setStatusFilter] = useState<string>('All');
@@ -38,6 +60,10 @@ export const MonthlyRentView: React.FC<MonthlyRentViewProps> = ({
   const [selectedChargeId, setSelectedChargeId] = useState<string | null>(
     monthlyCharges[0]?.id || null
   );
+  const [chargeToEdit, setChargeToEdit] = useState<MonthlyCharge | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [invoiceCharge, setInvoiceCharge] = useState<MonthlyCharge | null>(null);
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
 
   const monthsList = [
     'August 2026',
@@ -88,7 +114,7 @@ export const MonthlyRentView: React.FC<MonthlyRentViewProps> = ({
     {
       key: 'tenantName',
       header: 'Tenant Name',
-      width: '190px',
+      width: '180px',
       render: (c) => (
         <span className="font-semibold text-[#0F172A]">{c.tenantName}</span>
       ),
@@ -199,24 +225,54 @@ export const MonthlyRentView: React.FC<MonthlyRentViewProps> = ({
     },
     {
       key: 'actions',
-      header: 'Action',
-      width: '100px',
+      header: 'Actions',
+      width: enableInvoicing ? '210px' : '150px',
       align: 'center',
       sortable: false,
       render: (c) => (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onReceivePaymentForCharge?.(c);
-          }}
-          disabled={c.outstanding === 0}
-          className="px-2 py-0.5 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-40 disabled:hover:bg-emerald-700 text-white rounded-[2px] text-[10.5px] font-semibold flex items-center gap-1 mx-auto transition-colors"
-          title="Collect pending balance for this tenant"
-        >
-          <Receipt className="w-3 h-3" />
-          <span>Pay</span>
-        </button>
+        <div className="flex items-center justify-center gap-1">
+          {enableInvoicing && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setInvoiceCharge(c);
+                setIsInvoiceModalOpen(true);
+              }}
+              className="px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 rounded-[2px] text-[10.5px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+              title="View & Print Official Monthly Invoice / Demand Note"
+            >
+              <FileText className="w-3 h-3 text-slate-700" />
+              <span>Invoice</span>
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setChargeToEdit(c);
+              setIsEditModalOpen(true);
+            }}
+            className="px-1.5 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-300 rounded-[2px] text-[10.5px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+            title="Set / Adjust variable utility charges (Electricity, Water, Maintenance)"
+          >
+            <SlidersHorizontal className="w-3 h-3 text-blue-600" />
+            <span>Set Bills</span>
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onReceivePaymentForCharge?.(c);
+            }}
+            disabled={c.outstanding === 0}
+            className="px-1.5 py-0.5 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-40 disabled:hover:bg-emerald-700 text-white rounded-[2px] text-[10.5px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+            title="Collect pending balance for this tenant"
+          >
+            <Receipt className="w-3 h-3" />
+            <span>Pay</span>
+          </button>
+        </div>
       ),
     },
   ];
@@ -244,11 +300,22 @@ export const MonthlyRentView: React.FC<MonthlyRentViewProps> = ({
 
           <button
             type="button"
-            onClick={() => onGenerateCharges?.(selectedMonth)}
-            className="px-3 py-1 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold text-[11.5px] rounded-[2px] shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+            onClick={() => {
+              setChargeToEdit(null);
+              setIsEditModalOpen(true);
+            }}
+            className="px-3 py-1 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-[11.5px] rounded-[2px] shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
           >
-            <Zap className="w-3.5 h-3.5" />
-            <span>Generate / View Charges</span>
+            <Zap className="w-3.5 h-3.5 text-amber-300" />
+            <span>+ Record Utility / Rent Bill</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onGenerateCharges?.(selectedMonth)}
+            className="px-2.5 py-1 bg-white hover:bg-slate-50 text-slate-700 border border-[#CBD5E1] font-semibold text-[11.5px] rounded-[2px] shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <span>Refresh Cycle</span>
           </button>
         </div>
 
@@ -345,6 +412,35 @@ export const MonthlyRentView: React.FC<MonthlyRentViewProps> = ({
         onRowSelect={(c) => setSelectedChargeId(c.id)}
         onRowDoubleClick={(c) => onViewTenantDetails?.(c.tenantId)}
         emptyMessage={`No monthly rent records found for ${selectedMonth}.`}
+      />
+
+      {/* Edit / Add Utility & Monthly Charge Modal */}
+      <EditMonthlyChargeModal
+        isOpen={isEditModalOpen}
+        charge={chargeToEdit}
+        tenants={tenants}
+        defaultMonth={selectedMonth}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setChargeToEdit(null);
+        }}
+        onSave={(values) => {
+          onSaveCharge?.(values);
+          setIsEditModalOpen(false);
+          setChargeToEdit(null);
+        }}
+      />
+
+      {/* Official Tax Invoice / Demand Note Modal */}
+      <InvoiceModal
+        isOpen={isInvoiceModalOpen}
+        charge={invoiceCharge}
+        tenant={tenants.find((t) => t.id === invoiceCharge?.tenantId) || null}
+        mallName="Safari Mall Doha"
+        onClose={() => {
+          setIsInvoiceModalOpen(false);
+          setInvoiceCharge(null);
+        }}
       />
     </div>
   );

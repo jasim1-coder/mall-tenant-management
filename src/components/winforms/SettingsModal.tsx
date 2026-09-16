@@ -1,33 +1,52 @@
-import React, { useState } from 'react';
-import { X, Settings, Database, RefreshCw, Check } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Settings, Database, RefreshCw, Check, FileText } from 'lucide-react';
 import { WinFormsGroupBox } from './WinFormsGroupBox';
+import { AppStateData } from '../../types';
 
 interface SettingsModalProps {
   isOpen: boolean;
+  settings?: AppStateData['settings'];
   onClose: () => void;
   onResetData: () => void;
+  onSaveSettings?: (newSettings: Partial<AppStateData['settings']>) => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
+  settings,
   onClose,
   onResetData,
+  onSaveSettings,
 }) => {
-  const [mallName, setMallName] = useState('Safari Mall Doha');
-  const [currency, setCurrency] = useState('QAR');
-  const [fiscalYear, setFiscalYear] = useState('2026 (Calendar Jan-Dec)');
+  const [mallName, setMallName] = useState(settings?.mallName || 'Safari Mall Doha');
+  const [currency] = useState(settings?.currency || 'QAR');
+  const [fiscalYear] = useState('2026 (Calendar Jan-Dec)');
+  const [enableInvoicing, setEnableInvoicing] = useState<boolean>(
+    settings?.enableInvoicing === true
+  );
   const [autoAllocation, setAutoAllocation] = useState(true);
   const [savedSuccess, setSavedSuccess] = useState(false);
+
+  useEffect(() => {
+    if (settings) {
+      setMallName(settings.mallName || 'Safari Mall Doha');
+      setEnableInvoicing(settings.enableInvoicing === true);
+    }
+  }, [settings, isOpen]);
 
   if (!isOpen) return null;
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    onSaveSettings?.({
+      mallName,
+      enableInvoicing,
+    });
     setSavedSuccess(true);
     setTimeout(() => {
       setSavedSuccess(false);
       onClose();
-    }, 600);
+    }, 400);
   };
 
   return (
@@ -42,7 +61,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-300 hover:text-white hover:bg-rose-600 px-1 py-0.5 rounded transition-colors"
+            className="text-slate-300 hover:text-white hover:bg-rose-600 px-1 py-0.5 rounded transition-colors cursor-pointer"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -50,6 +69,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         {/* Body */}
         <form onSubmit={handleSave} className="p-4 space-y-3.5 bg-[#F8FAFC]">
+          {/* Mall Profile */}
           <WinFormsGroupBox title="Mall Property & Accounting Profile">
             <div className="space-y-2.5">
               <div>
@@ -85,6 +105,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </WinFormsGroupBox>
 
+          {/* Invoicing Feature Toggle */}
+          <WinFormsGroupBox title="Invoicing & Billing Features">
+            <div className="p-1">
+              <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={enableInvoicing}
+                  onChange={(e) => setEnableInvoicing(e.target.checked)}
+                  className="mt-0.5 rounded text-[#2563EB] w-4 h-4 cursor-pointer"
+                />
+                <div>
+                  <span className="font-bold text-slate-900 block text-[12px] flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-blue-600" />
+                    Enable Tax Invoices & Demand Notes Feature
+                  </span>
+                  <span className="text-slate-500 text-[11px] block mt-0.5">
+                    When ticked, shows the <strong>Invoice</strong> button and printable A4 report viewer. When unticked, invoicing buttons and viewers are completely hidden.
+                  </span>
+                </div>
+              </label>
+            </div>
+          </WinFormsGroupBox>
+
+          {/* Payment Rules & Factory Reset */}
           <WinFormsGroupBox title="Payment Rules &amp; Demo Data">
             <div className="space-y-3">
               <label className="inline-flex items-center gap-2 cursor-pointer">
@@ -107,7 +151,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <button
                   type="button"
                   onClick={onResetData}
-                  className="px-3 py-1 bg-white hover:bg-rose-50 text-rose-700 border border-rose-300 font-semibold text-[11px] rounded-[2px] shadow-2xs flex items-center gap-1"
+                  className="px-3 py-1 bg-white hover:bg-rose-50 text-rose-700 border border-rose-300 font-semibold text-[11px] rounded-[2px] shadow-2xs flex items-center gap-1 cursor-pointer"
                 >
                   <RefreshCw className="w-3 h-3" />
                   <span>Restore Factory Defaults</span>
@@ -121,13 +165,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-1.5 bg-white text-slate-700 font-medium text-[12px] rounded-[3px] border border-[#CBD5E1] hover:bg-[#E2E8F0] shadow-sm min-w-[75px]"
+              className="px-4 py-1.5 bg-white text-slate-700 font-medium text-[12px] rounded-[3px] border border-[#CBD5E1] hover:bg-[#E2E8F0] shadow-sm min-w-[75px] cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-1.5 bg-[#2563EB] text-white font-semibold text-[12px] rounded-[3px] border border-[#1D4ED8] hover:bg-[#1D4ED8] shadow-sm flex items-center gap-1.5"
+              className="px-5 py-1.5 bg-[#2563EB] text-white font-semibold text-[12px] rounded-[3px] border border-[#1D4ED8] hover:bg-[#1D4ED8] shadow-sm flex items-center gap-1.5 cursor-pointer"
             >
               {savedSuccess ? <Check className="w-3.5 h-3.5" /> : null}
               <span>Save Changes</span>

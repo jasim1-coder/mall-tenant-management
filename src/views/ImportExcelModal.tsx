@@ -78,6 +78,91 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
     return true; // default compliant
   };
 
+  const parseRentSchedule = (
+    scheduleStr: any,
+    rentTypeVal: any,
+    baseRent: number,
+    startYear: number = 2026
+  ): { rentType: 'Fixed' | 'Scheduled'; schedule?: { id: string; fromMonth: string; toMonth: string; monthlyRent: number }[] } => {
+    const typeStr = String(rentTypeVal || '').trim().toLowerCase();
+    const schedStr = String(scheduleStr || '').trim();
+
+    if (typeStr === 'fixed' && !schedStr) {
+      return { rentType: 'Fixed' };
+    }
+
+    if (!schedStr) {
+      if (typeStr === 'scheduled' || typeStr === 'step-up') {
+        return {
+          rentType: 'Scheduled',
+          schedule: [
+            { id: 'rs-1', fromMonth: `Jan-${startYear}`, toMonth: `Dec-${startYear}`, monthlyRent: baseRent },
+            { id: 'rs-2', fromMonth: `Jan-${startYear + 1}`, toMonth: `Dec-${startYear + 1}`, monthlyRent: Math.round(baseRent * 1.05) },
+            { id: 'rs-3', fromMonth: `Jan-${startYear + 2}`, toMonth: `Dec-${startYear + 2}`, monthlyRent: Math.round(baseRent * 1.10) },
+          ]
+        };
+      }
+      return { rentType: 'Fixed' };
+    }
+
+    const items: { id: string; fromMonth: string; toMonth: string; monthlyRent: number }[] = [];
+
+    if (schedStr.includes(';') || schedStr.includes('|')) {
+      const parts = schedStr.split(/[;|]/);
+      parts.forEach((p, idx) => {
+        const seg = p.trim();
+        if (!seg) return;
+        if (seg.includes(':')) {
+          const [period, amtStr] = seg.split(':');
+          const amt = parseFloat(amtStr.replace(/[^0-9.]/g, '')) || baseRent;
+          const periodClean = period.trim();
+          if (periodClean.length === 4 && !isNaN(Number(periodClean))) {
+            items.push({
+              id: `sch-${Date.now()}-${idx}`,
+              fromMonth: `Jan-${periodClean}`,
+              toMonth: `Dec-${periodClean}`,
+              monthlyRent: amt,
+            });
+          } else if (periodClean.includes(' to ') || periodClean.includes('-')) {
+            const separator = periodClean.includes(' to ') ? ' to ' : '-';
+            const [fromM, toM] = periodClean.split(separator);
+            items.push({
+              id: `sch-${Date.now()}-${idx}`,
+              fromMonth: fromM.trim(),
+              toMonth: (toM || fromM).trim(),
+              monthlyRent: amt,
+            });
+          } else {
+            items.push({
+              id: `sch-${Date.now()}-${idx}`,
+              fromMonth: `Period ${idx + 1}`,
+              toMonth: `Period ${idx + 1}`,
+              monthlyRent: amt,
+            });
+          }
+        }
+      });
+    } else if (schedStr.includes(',')) {
+      const amounts = schedStr.split(',').map((s) => parseFloat(s.replace(/[^0-9.]/g, ''))).filter((n) => !isNaN(n) && n > 0);
+      if (amounts.length > 0) {
+        amounts.forEach((amt, idx) => {
+          const yr = startYear + idx;
+          items.push({
+            id: `sch-${Date.now()}-${idx}`,
+            fromMonth: `Jan-${yr}`,
+            toMonth: `Dec-${yr}`,
+            monthlyRent: amt,
+          });
+        });
+      }
+    }
+
+    if (items.length > 0) {
+      return { rentType: 'Scheduled', schedule: items };
+    }
+    return { rentType: typeStr === 'scheduled' ? 'Scheduled' : 'Fixed' };
+  };
+
   const processFile = async (file: File) => {
     setIsProcessing(true);
     setParseError(null);
@@ -127,9 +212,22 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
         const rentRaw = getVal(['Monthly Rent', 'MonthlyRent', 'Monthly Rent (QAR)', 'Rent', 'Rent (QAR)', 'Amount']);
         const rent = typeof rentRaw === 'number' ? rentRaw : parseFloat(String(rentRaw).replace(/[^0-9.]/g, '')) || 0;
 
+        const rentTypeRaw = getVal(['Rent Type', 'RentType', 'Structure', 'Rent Structure']);
+        const scheduleRaw = getVal(['Rent Schedule', 'RentSchedule', 'Step-Up Schedule', 'Escalation Schedule', 'Schedule']);
+        
+        const startYr = parseInt(startDate.split('-').pop() || startDate.split('/').pop() || '2026', 10) || 2026;
+        const { rentType, schedule: rentSchedule } = parseRentSchedule(scheduleRaw, rentTypeRaw, rent, startYr);
+
         const hasSecurityCheque = parseBooleanCheck(getVal(['Security Cheque', 'SecurityCheque', 'Security Cheque (Yes/No)', 'Sec Cheque', 'Deposit Cheque']));
         const hasRentCheques = parseBooleanCheck(getVal(['Rent Cheques', 'RentCheques', 'Rent Cheques (Yes/No)', 'PDC Cheques', 'Rent Cheque']));
         const hasUtilityCheque = parseBooleanCheck(getVal(['Utility Cheque', 'UtilityCheque', 'Utility Cheque (Yes/No)', 'Fitout Cheque', 'Util Cheque']));
+
+        const floor = String(getVal(['Floor', 'Level', 'Storey']) || '').trim();
+        const category = String(getVal(['Category', 'Trade Category', 'Business Type', 'Type']) || 'Retail').trim();
+        const contactPerson = String(getVal(['Contact Person', 'ContactPerson', 'Manager', 'Contact']) || '').trim();
+        const phone = String(getVal(['Phone', 'Mobile', 'Tel', 'Contact No']) || '').trim();
+        const email = String(getVal(['Email', 'Email Address', 'E-mail']) || '').trim();
+        const remarks = String(getVal(['Remarks', 'Notes', 'Comments']) || '').trim();
 
         // Validation Rules
         let status: 'Valid' | 'Error' = 'Valid';
@@ -150,13 +248,21 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
           accountCode,
           tenantName: tenantName || 'Unnamed Tenant',
           shop,
+          floor: floor || undefined,
+          category: category || 'Retail',
           area,
           startDate,
           endDate,
           rent,
+          rentType,
+          rentSchedule,
           hasSecurityCheque,
           hasRentCheques,
           hasUtilityCheque,
+          contactPerson: contactPerson || undefined,
+          phone: phone || undefined,
+          email: email || undefined,
+          remarks: remarks || undefined,
           status,
           errorMessage: errorMessage || undefined,
         };
@@ -200,10 +306,14 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
         'Account Code': 'T-1001',
         'Tenant Name': 'ABC Trading WLL',
         'Shop Number': 'S-102',
+        'Floor': 'Ground Floor',
+        'Category': 'Department & Electronics',
         'Floor Area (m2)': 85,
         'Contract Start Date': '01/01/2026',
         'Contract End Date': '31/12/2026',
         'Monthly Rent (QAR)': 15000,
+        'Rent Type': 'Fixed',
+        'Rent Schedule': '',
         'Security Cheque (Yes/No)': 'Yes',
         'Rent Cheques (Yes/No)': 'Yes',
         'Utility Cheque (Yes/No)': 'Yes',
@@ -216,26 +326,34 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
         'Account Code': 'T-1002',
         'Tenant Name': 'Gulf Specialty Foods',
         'Shop Number': 'S-205',
+        'Floor': 'First Floor',
+        'Category': 'Food & Beverage',
         'Floor Area (m2)': 120,
         'Contract Start Date': '01/04/2026',
-        'Contract End Date': '31/03/2027',
-        'Monthly Rent (QAR)': 22000,
+        'Contract End Date': '31/03/2029',
+        'Monthly Rent (QAR)': 20000,
+        'Rent Type': 'Scheduled',
+        'Rent Schedule': '2026: 20000; 2027: 22000; 2028: 24000',
         'Security Cheque (Yes/No)': 'Yes',
         'Rent Cheques (Yes/No)': 'Yes',
         'Utility Cheque (Yes/No)': 'Yes',
         'Contact Person': 'Ahmed Al-Subaey',
         'Phone': '+974 5511 9876',
         'Email': 'admin@gulffoods.qa',
-        'Remarks': 'Food court anchor unit',
+        'Remarks': '3-year step-up commercial lease',
       },
       {
         'Account Code': 'T-1003',
         'Tenant Name': 'Doha Gold & Diamonds Souq',
         'Shop Number': 'S-108',
+        'Floor': 'Ground Floor',
+        'Category': 'Jewelry & Luxury',
         'Floor Area (m2)': 95,
         'Contract Start Date': '01/01/2026',
         'Contract End Date': '31/12/2027',
         'Monthly Rent (QAR)': 32000,
+        'Rent Type': 'Fixed',
+        'Rent Schedule': '',
         'Security Cheque (Yes/No)': 'Yes',
         'Rent Cheques (Yes/No)': 'Yes',
         'Utility Cheque (Yes/No)': 'No',
@@ -278,28 +396,41 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
       accountCode: r.accountCode,
       name: r.tenantName,
       shopNumber: r.shop,
-      floor: r.shop.startsWith('S-1')
+      floor: r.floor || (r.shop.startsWith('S-1')
         ? 'Ground Floor'
         : r.shop.startsWith('S-2')
         ? 'First Floor'
         : r.shop.startsWith('S-3')
         ? 'Second Floor'
-        : 'Ground Floor',
-      category: 'Retail',
+        : 'Ground Floor'),
+      category: r.category || 'Retail',
       areaSqM: r.area,
       contractStart: r.startDate,
       contractEnd: r.endDate,
-      rentType: 'Fixed',
+      rentType: r.rentType || (r.rentSchedule && r.rentSchedule.length > 0 ? 'Scheduled' : 'Fixed'),
       monthlyRent: r.rent,
+      rentSchedule: r.rentSchedule,
       status: 'Active',
-      contactPerson: 'Authorized Signatory',
-      phone: '+974 4400 0000',
-      email: `info@${r.tenantName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'tenant'}.qa`,
-      remarks: `Imported via ${selectedFileName || 'Excel file'} on ${new Date().toLocaleDateString()}`,
+      contactPerson: r.contactPerson || 'Authorized Signatory',
+      phone: r.phone || '+974 4400 0000',
+      email: r.email || `info@${r.tenantName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'tenant'}.qa`,
+      remarks: r.remarks || `Imported via ${selectedFileName || 'Excel file'} on ${new Date().toLocaleDateString()}`,
       securityDeposit: r.rent * 3,
       hasSecurityCheque: r.hasSecurityCheque !== false,
       hasRentCheques: r.hasRentCheques !== false,
       hasUtilityCheque: r.hasUtilityCheque !== false,
+      contractHistory: [
+        {
+          id: `ct-imp-${Date.now()}-${i}`,
+          termPeriod: `${r.startDate} to ${r.endDate}`,
+          startDate: r.startDate,
+          endDate: r.endDate,
+          monthlyRent: r.rent,
+          executionDate: r.startDate,
+          status: 'Active Current',
+          remarks: r.remarks || 'Initial lease contract from Excel import'
+        }
+      ]
     }));
 
     onImportComplete(newTenants);

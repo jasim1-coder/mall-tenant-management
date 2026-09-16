@@ -12,6 +12,9 @@ import {
   updateChequeStatusInStore,
   addChequeToStore,
   batchImportTenantsToStore,
+  updateMonthlyChargeInStore,
+  addOrUpdateMonthlyChargeInStore,
+  updateSettingsInStore,
 } from './services/dataStore';
 
 // WinForms Framework Shell Components
@@ -37,7 +40,9 @@ import { RenewContractModal } from './views/RenewContractModal';
 export default function App() {
   // Navigation State
   const [activeModule, setActiveModule] = useState<NavModule>('dashboard');
+  const [previousModule, setPreviousModule] = useState<NavModule>('dashboard');
   const [detailedTenant, setDetailedTenant] = useState<Tenant | null>(null);
+  const [previousDetailedTenant, setPreviousDetailedTenant] = useState<Tenant | null>(null);
   const [paymentPresetTenantId, setPaymentPresetTenantId] = useState<string | null>(null);
 
   // App Data State
@@ -70,6 +75,19 @@ export default function App() {
     setData(loadAppData());
   }, []);
 
+  // Listen for storage events (multi-tab sync) and in-app mutations
+  useEffect(() => {
+    const handleDataChange = () => {
+      setData(loadAppData());
+    };
+    window.addEventListener('storage', handleDataChange);
+    window.addEventListener('app_data_changed', handleDataChange);
+    return () => {
+      window.removeEventListener('storage', handleDataChange);
+      window.removeEventListener('app_data_changed', handleDataChange);
+    };
+  }, []);
+
   // Sync state on reset
   const handleResetData = () => {
     resetAppData();
@@ -97,6 +115,8 @@ export default function App() {
       addTenantToStore(tenantData);
       showStatus(`New tenant [${tenantData.name}] successfully registered.`);
     }
+    setIsAddEditModalOpen(false);
+    setTenantToEdit(null);
     refreshData();
     // Also update detailed view if active
     if (detailedTenant && detailedTenant.id === tenantData.id) {
@@ -122,9 +142,10 @@ export default function App() {
     tenantId: string,
     newEndDate: string,
     newMonthlyRent: number,
-    remarks: string
+    remarks: string,
+    newStartDate?: string
   ) => {
-    renewTenantContractInStore(tenantId, newEndDate, newMonthlyRent, remarks);
+    renewTenantContractInStore(tenantId, newEndDate, newMonthlyRent, remarks, newStartDate);
     refreshData();
     showStatus(`Contract for tenant renewed through ${newEndDate}.`);
     if (detailedTenant?.id === tenantId) {
@@ -141,6 +162,8 @@ export default function App() {
 
   // --- Handlers for Payments ---
   const handleOpenReceivePayment = (tenant?: Tenant) => {
+    setPreviousModule(activeModule);
+    setPreviousDetailedTenant(detailedTenant);
     if (tenant) {
       setPaymentPresetTenantId(tenant.id);
     } else {
@@ -150,10 +173,19 @@ export default function App() {
     setDetailedTenant(null);
   };
 
+  const handleClosePaymentEntry = () => {
+    setActiveModule(previousModule || 'dashboard');
+    if (previousDetailedTenant) {
+      setDetailedTenant(previousDetailedTenant);
+    }
+    setPaymentPresetTenantId(null);
+  };
+
   const handleSavePayment = (payment: Partial<PaymentRecord>) => {
     addPaymentToStore(payment);
     refreshData();
     showStatus(`Payment receipt [${payment.receiptNo}] of QAR ${payment.amount?.toLocaleString()} posted.`);
+    handleClosePaymentEntry();
   };
 
   // --- Handlers for Cheques ---
@@ -242,6 +274,8 @@ export default function App() {
             onImportExcel={() => setIsImportExcelOpen(true)}
             onOpenEditTenant={handleOpenEditTenant}
             onEditTenant={handleOpenEditTenant}
+            onOpenRenewContract={handleOpenRenewContract}
+            onRenewContract={handleOpenRenewContract}
             onViewTenantDetails={handleOpenTenantDetails}
             onOpenDetails={handleOpenTenantDetails}
             onDeleteTenant={handleDeleteTenant}
@@ -256,6 +290,8 @@ export default function App() {
           <MonthlyRentView
             id="view-monthly-rent"
             monthlyCharges={data.monthlyCharges}
+            tenants={data.tenants}
+            enableInvoicing={data.settings?.enableInvoicing === true}
             onReceivePaymentForCharge={(charge) => {
               const matchingTenant = data.tenants.find((t) => t.id === charge.tenantId);
               handleOpenReceivePayment(matchingTenant);
@@ -266,6 +302,13 @@ export default function App() {
             onViewTenantDetails={(tenantId) => {
               const matchingTenant = data.tenants.find((t) => t.id === tenantId);
               if (matchingTenant) handleOpenTenantDetails(matchingTenant);
+            }}
+            onSaveCharge={(values) => {
+              const updated = addOrUpdateMonthlyChargeInStore(values);
+              if (updated) {
+                showStatus(`Utility bills & dues for [${updated.tenantName}] (${updated.month}) saved successfully.`);
+                refreshData();
+              }
             }}
           />
         );
@@ -290,7 +333,7 @@ export default function App() {
             outstandingCharges={data.outstandingCharges}
             initialTenantId={paymentPresetTenantId}
             onSavePayment={handleSavePayment}
-            onCancel={() => setActiveModule('outstanding')}
+            onCancel={handleClosePaymentEntry}
           />
         );
 
@@ -408,7 +451,10 @@ export default function App() {
         id="modal-add-edit-tenant"
         isOpen={isAddEditModalOpen}
         tenantToEdit={tenantToEdit}
-        onClose={() => setIsAddEditModalOpen(false)}
+        onClose={() => {
+          setIsAddEditModalOpen(false);
+          setTenantToEdit(null);
+        }}
         onSave={handleSaveTenant}
       />
 
@@ -429,8 +475,14 @@ export default function App() {
 
       <SettingsModal
         isOpen={isSettingsOpen}
+        settings={data.settings}
         onClose={() => setIsSettingsOpen(false)}
         onResetData={handleResetData}
+        onSaveSettings={(newSettings) => {
+          updateSettingsInStore(newSettings);
+          refreshData();
+          showStatus('System configuration updated.');
+        }}
       />
     </div>
   );
